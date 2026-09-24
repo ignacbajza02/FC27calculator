@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>FC27 Stats Calculator</title>
+<style>
+:root{
+  --bg:#101415; --panel:#1a2223; --panel2:#111819; --line:#303b3c;
+  --text:#f4f6f6; --muted:#8e999a; --green:#2d8719; --light:#8bdc45;
+  --pitch1:#2d8c24; --pitch2:#328f28;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:14px;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+.wrap{width:min(960px,100%);margin:auto}
+h1{margin:0 0 5px;font-size:28px}
+.subtitle{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.4}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 13px;font-size:18px}
+.section{margin-bottom:20px}
+.title{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:8px}
+.title b{font-size:15px}.title span{font-size:10px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+label{font-size:11px;color:#c9d0d0;display:flex;flex-direction:column;gap:5px}
+input,select{width:100%;background:#0d1112;color:#fff;border:1px solid #404a4b;border-radius:8px;padding:9px;font-size:14px}
+input:focus,select:focus{outline:0;border-color:#768384}
+.main-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.main{background:var(--panel2);border:1px solid var(--line);border-radius:10px;text-align:center;padding:11px 6px}
+.main small{color:#aeb8b9;font-weight:700}.main strong{display:block;margin-top:2px;font-size:27px}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
+.box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.box b{display:block;font-size:11px;color:#aeb8b9;margin-bottom:6px}
+.note{margin:6px 0 0;color:#747f80;font-size:10px;line-height:1.4}
+.side-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.side-grid div{position:relative}
+.side-grid input{position:absolute;opacity:0}
+.side-grid label{display:block;text-align:center;background:#151b1c;color:#aeb8b9;border:1px solid #394243;border-radius:7px;padding:7px 2px;font-size:10px;font-weight:700;cursor:pointer}
+.side-grid input:checked+label{background:#8bdc45;color:#0a1707;border-color:#b6ed85}
+.pitch-wrap{display:flex;justify-content:center}
+.pitch{
+ position:relative;width:min(100%,430px);aspect-ratio:.79;overflow:hidden;border:2px solid rgba(255,255,255,.72);border-radius:8px;
+ background:repeating-linear-gradient(90deg,var(--pitch1) 0 12.5%,var(--pitch2) 12.5% 25%);
+}
+.pitch:after{
+ content:"";position:absolute;inset:0;pointer-events:none;
+ background:
+ linear-gradient(rgba(255,255,255,.48),rgba(255,255,255,.48)) center/2px 100% no-repeat,
+ linear-gradient(rgba(255,255,255,.48),rgba(255,255,255,.48)) center/100% 2px no-repeat;
+}
+.center-circle{position:absolute;width:33%;aspect-ratio:1;border:2px solid rgba(255,255,255,.48);border-radius:50%;left:33.5%;top:33.5%}
+.boxline{position:absolute;width:44%;height:16%;left:28%;border:2px solid rgba(255,255,255,.48)}
+.boxline.top{top:-1px;border-top:0}.boxline.bottom{bottom:-1px;border-bottom:0}
+.goal{position:absolute;width:18%;height:6%;left:41%;border:2px solid rgba(255,255,255,.48)}
+.goal.top{top:-1px;border-top:0}.goal.bottom{bottom:-1px;border-bottom:0}
+.spot{
+ position:absolute;transform:translate(-50%,-50%);width:58px;min-height:44px;padding:5px 4px;border-radius:8px;
+ background:#1d2526;color:#f1f3f3;text-align:center;line-height:1;z-index:2;
+ box-shadow:0 2px 7px rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.07)
+}
+.spot .num{font-size:19px;font-weight:900;vertical-align:baseline}.spot .plus{font-size:10px;font-weight:800;color:#aeb8b9;margin-left:2px}.spot .name{display:block;font-size:10px;font-weight:800;margin-top:3px}
+.spot.side{background:var(--light);color:#0a1707}.spot.side .plus{color:#254018}
+.spot.best{background:var(--green);color:#fff;border-color:rgba(255,255,255,.65);box-shadow:0 0 0 2px rgba(255,255,255,.48),0 4px 12px rgba(0,0,0,.25)}
+.spot.best .plus{color:#d7efcf}
+.spot.mainpos{outline:2px solid #fff;outline-offset:2px}
+.legend{text-align:center;color:#788384;font-size:10px;line-height:1.45;margin-top:8px}
+button{width:100%;border:0;border-radius:9px;padding:10px;background:#f1f3f3;color:#111;font-weight:800;cursor:pointer}
+.error{min-height:17px;color:#ff9292;font-size:11px;margin-top:8px}
+@media(max-width:700px){.main-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:470px){.grid{grid-template-columns:repeat(2,1fr)}.settings{grid-template-columns:1fr}.side-grid{grid-template-columns:repeat(6,1fr)}.spot{width:52px;min-height:41px}.spot .num{font-size:17px}.spot .name{font-size:9px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>FC27 Stats Calculator</h1>
+<p class="subtitle">Enter substats to calculate the six main stats and the 11 positions shown on the pitch.</p>
+<section class="panel">
+<h2>Individual Attributes</h2>
+<div class="section">
+<div class="title"><b>Pace</b></div>
+<div class="grid">
+<label>Acceleration<input class="attr" data-a="Acceleration" max="99" min="1" type="number" value="84"/></label>
+<label>Sprint Speed<input class="attr" data-a="Sprint Speed" max="99" min="1" type="number" value="85"/></label>
+</div>
+</div>
+<div class="section">
+<div class="title"><b>Shooting</b></div>
+<div class="grid">
+<label>Positioning<input class="attr" data-a="Attack Positioning" max="99" min="1" type="number" value="89"/></label>
+<label>Finishing<input class="attr" data-a="Finishing" max="99" min="1" type="number" value="93"/></label>
+<label>Shot Power<input class="attr" data-a="Shot Power" max="99" min="1" type="number" value="92"/></label>
+<label>Long Shots<input class="attr" data-a="Long Shots" max="99" min="1" type="number" value="88"/></label>
+<label>Volleys<input class="attr" data-a="Volleys" max="99" min="1" type="number" value="90"/></label>
+<label>Penalties<input class="attr" data-a="Penalties" max="99" min="1" type="number" value="87"/></label>
+</div>
+</div>
+<div class="section">
+<div class="title"><b>Passing</b></div>
+<div class="grid">
+<label>Vision<input class="attr" data-a="Vision" max="99" min="1" type="number" value="92"/></label>
+<label>Crossing<input class="attr" data-a="Crossing" max="99" min="1" type="number" value="86"/></label>
+<label>FK Acc.<input class="attr" data-a="FK Accuracy" max="99" min="1" type="number" value="88"/></label>
+<label>Short Pass<input class="attr" data-a="Short Passing" max="99" min="1" type="number" value="90"/></label>
+<label>Long Pass<input class="attr" data-a="Long Passing" max="99" min="1" type="number" value="90"/></label>
+<label>Curve<input class="attr" data-a="Curve" max="99" min="1" type="number" value="86"/></label>
+</div>
+</div>
+<div class="section">
+<div class="title"><b>Dribbling</b></div>
+<div class="grid">
+<label>Agility<input class="attr" data-a="Agility" max="99" min="1" type="number" value="81"/></label>
+<label>Balance<input class="attr" data-a="Balance" max="99" min="1" type="number" value="80"/></label>
+<label>Reactions<input class="attr" data-a="Reactions" max="99" min="1" type="number" value="87"/></label>
+<label>Ball Control<input class="attr" data-a="Ball Control" max="99" min="1" type="number" value="95"/></label>
+<label>Dribbling<input class="attr" data-a="Dribbling" max="99" min="1" type="number" value="90"/></label>
+<label>Composure<input class="attr" data-a="Composure" max="99" min="1" type="number" value="92"/></label>
+</div>
+</div>
+<div class="section">
+<div class="title"><b>Defending</b></div>
+<div class="grid">
+<label>Interceptions<input class="attr" data-a="Interceptions" max="99" min="1" type="number" value="36"/></label>
+<label>Heading Acc.<input class="attr" data-a="Heading Accuracy" max="99" min="1" type="number" value="76"/></label>
+<label>Def. Awareness<input class="attr" data-a="Defensive Awareness" max="99" min="1" type="number" value="36"/></label>
+<label>Stand Tackle<input class="attr" data-a="Stand Tackle" max="99" min="1" type="number" value="36"/></label>
+<label>Slide Tackle<input class="attr" data-a="Slide Tackle" max="99" min="1" type="number" value="32"/></label>
+</div>
+</div>
+<div class="section">
+<div class="title"><b>Physical</b></div>
+<div class="grid">
+<label>Jumping<input class="attr" data-a="Jumping" max="99" min="1" type="number" value="64"/></label>
+<label>Stamina<input class="attr" data-a="Stamina" max="99" min="1" type="number" value="79"/></label>
+<label>Strength<input class="attr" data-a="Strength" max="99" min="1" type="number" value="77"/></label>
+<label>Aggression<input class="attr" data-a="Aggression" max="99" min="1" type="number" value="67"/></label>
+</div>
+</div>
+<button id="calc">Calculate</button>
+<div class="error" id="error"></div>
+</section>
+<section class="panel">
+<h2>Main Stats</h2>
+<div class="main-grid">
+<div class="main"><small>PAC</small><strong id="PAC">—</strong></div>
+<div class="main"><small>SHO</small><strong id="SHO">—</strong></div>
+<div class="main"><small>PAS</small><strong id="PAS">—</strong></div>
+<div class="main"><small>DRI</small><strong id="DRI">—</strong></div>
+<div class="main"><small>DEF</small><strong id="DEF">—</strong></div>
+<div class="main"><small>PHY</small><strong id="PHY">—</strong></div>
+</div>
+<div style="height:18px"></div>
+<h2>Known Positions <span style="font-size:11px;color:#748081;font-weight:400">(optional)</span></h2>
+<div class="settings">
+<div class="box">
+<b>International Reputation</b>
+<select id="rep">
+<option value="1">★ 1</option>
+<option value="2">★★ 2</option>
+<option selected="" value="3">★★★ 3</option>
+<option value="4">★★★★ 4</option>
+<option value="5">★★★★★ 5</option>
+</select>
+</div>
+<div class="box">
+<b>Main Position <span style="font-weight:400">(optional)</span></b>
+<select id="main-pos">
+<option value="">None</option>
+</select>
+</div>
+</div>
+<div class="box">
+<b>Side Positions <span style="font-weight:400">(optional)</span></b>
+<div class="side-grid" id="side-grid"></div>
+</div>
+<div style="height:18px"></div>
+<h2>Position Ratings</h2>
+<div class="pitch-wrap">
+<div class="pitch">
+<div class="center-circle"></div>
+<div class="boxline top"></div><div class="boxline bottom"></div>
+<div class="goal top"></div><div class="goal bottom"></div>
+<div class="spot" id="LW" style="left:17%;top:10%"><span class="num" data-n="LW">—</span><span class="plus" data-b="LW">+0</span><span class="name">LW</span></div>
+<div class="spot" id="ST" style="left:50%;top:8%"><span class="num" data-n="ST">—</span><span class="plus" data-b="ST">+0</span><span class="name">ST</span></div>
+<div class="spot" id="RW" style="left:83%;top:10%"><span class="num" data-n="RW">—</span><span class="plus" data-b="RW">+0</span><span class="name">RW</span></div>
+<div class="spot" id="CAM" style="left:50%;top:35%"><span class="num" data-n="CAM">—</span><span class="plus" data-b="CAM">+0</span><span class="name">CAM</span></div>
+<div class="spot" id="LM" style="left:18%;top:49%"><span class="num" data-n="LM">—</span><span class="plus" data-b="LM">+0</span><span class="name">LM</span></div>
+<div class="spot" id="CM" style="left:50%;top:49%"><span class="num" data-n="CM">—</span><span class="plus" data-b="CM">+0</span><span class="name">CM</span></div>
+<div class="spot" id="RM" style="left:82%;top:49%"><span class="num" data-n="RM">—</span><span class="plus" data-b="RM">+0</span><span class="name">RM</span></div>
+<div class="spot" id="CDM" style="left:50%;top:63%"><span class="num" data-n="CDM">—</span><span class="plus" data-b="CDM">+0</span><span class="name">CDM</span></div>
+<div class="spot" id="LB" style="left:18%;top:84%"><span class="num" data-n="LB">—</span><span class="plus" data-b="LB">+0</span><span class="name">LB</span></div>
+<div class="spot" id="CB" style="left:50%;top:89%"><span class="num" data-n="CB">—</span><span class="plus" data-b="CB">+0</span><span class="name">CB</span></div>
+<div class="spot" id="RB" style="left:82%;top:84%"><span class="num" data-n="RB">—</span><span class="plus" data-b="RB">+0</span><span class="name">RB</span></div>
+</div>
+</div>
+</section>
+</div>
+<script>
+const MAIN = {
+  PAC: {"Acceleration":0.45,"Sprint Speed":0.55},
+  SHO: {"Finishing":0.45,"Volleys":0.05,"Shot Power":0.20,"Long Shots":0.20,"Attack Positioning":0.05,"Penalties":0.05},
+  PAS: {"Crossing":0.20,"Short Passing":0.35,"Curve":0.05,"FK Accuracy":0.05,"Long Passing":0.15,"Vision":0.20},
+  DRI: {"Dribbling":0.48,"Ball Control":0.33,"Agility":0.09,"Balance":0.05,"Reactions":0.03,"Composure":0.02},
+  DEF: {"Heading Accuracy":0.10,"Interceptions":0.20,"Defensive Awareness":0.30,"Stand Tackle":0.30,"Slide Tackle":0.10},
+  PHY: {"Jumping":0.05,"Stamina":0.25,"Strength":0.50,"Aggression":0.20}
+};
+
+/*
+  Position coefficients are calibrated to the supplied Totti reference:
+  LW 89, ST 88, RW 89, CAM 90, LM 89, CM 85, RM 89,
+  CDM 66, LB 63, CB 55, RB 63.
+*/
+const POS = {
+  LW: {"Acceleration":.07,"Sprint Speed":.06,"Agility":.03,"Reactions":.07,"Attack Positioning":.09,"Vision":.06,"Ball Control":.14,"Crossing":.09,"Dribbling":.16,"Finishing":.10,"Short Passing":.09,"Long Shots":.04},
+  ST: {"Acceleration":.04,"Sprint Speed":.05,"Strength":.05,"Reactions":.08,"Attack Positioning":.13,"Ball Control":.10,"Dribbling":.07,"Finishing":.18,"Heading Accuracy":.10,"Short Passing":.05,"Shot Power":.10,"Long Shots":.03,"Volleys":.02},
+  RW: {"Acceleration":.07,"Sprint Speed":.06,"Agility":.03,"Reactions":.07,"Attack Positioning":.09,"Vision":.06,"Ball Control":.14,"Crossing":.09,"Dribbling":.16,"Finishing":.10,"Short Passing":.09,"Long Shots":.04},
+  CAM: {"Acceleration":.04,"Sprint Speed":.03,"Agility":.03,"Reactions":.07,"Attack Positioning":.09,"Vision":.14,"Ball Control":.15,"Dribbling":.13,"Finishing":.07,"Long Passing":.04,"Short Passing":.16,"Long Shots":.05},
+  LM: {"Acceleration":.07,"Sprint Speed":.06,"Stamina":.05,"Reactions":.07,"Attack Positioning":.08,"Vision":.07,"Ball Control":.13,"Crossing":.10,"Dribbling":.15,"Finishing":.06,"Long Passing":.05,"Short Passing":.11},
+  CM: {"Stamina":.06,"Reactions":.08,"Interceptions":.05,"Attack Positioning":.06,"Vision":.13,"Ball Control":.14,"Dribbling":.07,"Finishing":.02,"Long Passing":.13,"Short Passing":.17,"Long Shots":.04,"Stand Tackle":.05},
+  RM: {"Acceleration":.07,"Sprint Speed":.06,"Stamina":.05,"Reactions":.07,"Attack Positioning":.08,"Vision":.07,"Ball Control":.13,"Crossing":.10,"Dribbling":.15,"Finishing":.06,"Long Passing":.05,"Short Passing":.11},
+  CDM: {"Stamina":.06,"Strength":.04,"Reactions":.07,"Aggression":.05,"Interceptions":.14,"Vision":.04,"Ball Control":.10,"Long Passing":.10,"Short Passing":.14,"Defensive Awareness":.09,"Stand Tackle":.12,"Slide Tackle":.05},
+  LB: {"Acceleration":.05,"Sprint Speed":.07,"Stamina":.08,"Reactions":.08,"Interceptions":.12,"Ball Control":.07,"Crossing":.09,"Heading Accuracy":.04,"Short Passing":.07,"Defensive Awareness":.08,"Stand Tackle":.11,"Slide Tackle":.14},
+  CB: {"Sprint Speed":.02,"Jumping":.03,"Strength":.10,"Reactions":.05,"Aggression":.07,"Interceptions":.13,"Ball Control":.04,"Heading Accuracy":.10,"Short Passing":.05,"Defensive Awareness":.14,"Stand Tackle":.17,"Slide Tackle":.10},
+  RB: {"Acceleration":.05,"Sprint Speed":.07,"Stamina":.08,"Reactions":.08,"Interceptions":.12,"Ball Control":.07,"Crossing":.09,"Heading Accuracy":.04,"Short Passing":.07,"Defensive Awareness":.08,"Stand Tackle":.11,"Slide Tackle":.14}
+};
+
+const ORDER = ["LW","ST","RW","CAM","LM","CM","RM","CDM","LB","CB","RB"];
+
+function readAttrs(){
+  const out = {};
+  document.querySelectorAll(".attr").forEach(el => out[el.dataset.a] = Number(el.value));
+  return out;
+}
+
+function weighted(formula, values){
+  let total = 0, weight = 0;
+  for(const [name,w] of Object.entries(formula)){
+    if(!Number.isFinite(values[name])) throw new Error("Missing value: " + name);
+    total += values[name] * w;
+    weight += w;
+  }
+  return Math.round(total / weight);
+}
+
+function reputationBonus(stars){
+  // Requested: 1-2 stars = +0, 3-4 stars = +1, 5 stars = +2.
+  if(stars <= 2) return 0;
+  if(stars <= 4) return 1;
+  return 2;
+}
+
+function rebuildKnownPositions(){
+  const main = document.getElementById("main-pos");
+  const side = document.getElementById("side-grid");
+  for(const p of ORDER){
+    const o = document.createElement("option");
+    o.value = p; o.textContent = p;
+    main.appendChild(o);
+
+    const d = document.createElement("div");
+    d.innerHTML = `<input type="checkbox" id="side-${p}" value="${p}"><label for="side-${p}">${p}</label>`;
+    side.appendChild(d);
+    d.querySelector("input").addEventListener("change", calculate);
+  }
+  main.addEventListener("change", () => {
+    const v = main.value;
+    if(v){
+      const cb = document.getElementById("side-" + v);
+      if(cb) cb.checked = false;
+    }
+    calculate();
+  });
+}
+
+function knownPositions(){
+  const main = document.getElementById("main-pos").value;
+  const sides = [...document.querySelectorAll("#side-grid input:checked")].map(x => x.value);
+  return {main,sides};
+}
+
+function calculate(){
+  const err = document.getElementById("error");
+  err.textContent = "";
+  try{
+    const values = readAttrs();
+
+    for(const [name,v] of Object.entries(values)){
+      if(!Number.isFinite(v) || v < 1 || v > 99) throw new Error(name + " must be between 1 and 99.");
+    }
+
+    for(const stat of Object.keys(MAIN)){
+      document.getElementById(stat).textContent = weighted(MAIN[stat], values);
+    }
+
+    const stars = Number(document.getElementById("rep").value);
+    const bonus = reputationBonus(stars);
+    const known = knownPositions();
+    const results = {};
+
+    for(const p of ORDER){
+      const base = weighted(POS[p], values);
+      results[p] = {base, final:Math.min(99, base + bonus)};
+      document.querySelector(`[data-n="${p}"]`).textContent = base;
+      document.querySelector(`[data-b="${p}"]`).textContent = "+" + bonus;
+    }
+
+    // Base position selection:
+    // one dark green winner, unless a Main Position is supplied.
+    let best = known.main;
+    if(!best){
+      let high = -Infinity;
+      for(const p of ORDER){
+        if(results[p].final > high){
+          high = results[p].final;
+          best = p;
+        }
+      }
+    }
+
+    for(const p of ORDER){
+      const spot = document.getElementById(p);
+      spot.classList.toggle("best", p === best);
+      spot.classList.toggle("side", known.sides.includes(p) && p !== best);
+      spot.classList.toggle("mainpos", p === known.main);
+    }
+  }catch(e){
+    err.textContent = e.message;
+  }
+}
+
+document.querySelectorAll(".attr").forEach(el => el.addEventListener("input", calculate));
+document.getElementById("rep").addEventListener("change", calculate);
+document.getElementById("calc").addEventListener("click", calculate);
+rebuildKnownPositions();
+calculate();
+</script>
+</body>
+</html>
